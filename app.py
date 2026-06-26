@@ -6,26 +6,24 @@ st.set_page_config(page_title="Estadísticas Fantasy League", page_icon="⚽", l
 # ═══════════════════════════════════════════════════════════════
 # CONFIGURACIÓN
 #
-# Cada liga tiene DOS archivos CSV (o URLs de Google Sheets):
+# Cada liga tiene DOS URLs de Google Sheets publicadas como CSV:
 #   - stats:  Participante, Puntos, Goles, Asistencias
-#   - best:   Participante, GK, DEF, MID, FWD
+#   - best:   Participante, POR, DEF, MED, DEL  (columnas de posición)
 #
-# Para publicar una pestaña de Google Sheets como CSV:
-#   Archivo -> Compartir -> Publicar en web -> Hoja (elige la pestaña) -> CSV
+# Para publicar una pestaña:
+#   Archivo -> Compartir -> Publicar en web -> Hoja -> CSV -> Publicar
 # ═══════════════════════════════════════════════════════════════
 LEAGUES = {
     "La Liga": {
-        "stats": "data/la_liga.csv",
-        "best": "data/la_liga_mejores.csv",
+        "stats": "https://docs.google.com/spreadsheets/d/e/2PACX-1vT4n7ctgiUJws_wA06LJvd0unWdULuw8nIfs7CvRlMqDzhzsJKqgnlUHns_mN_u3l7JTeOmJ3N-GxpB/pub?gid=0&single=true&output=csv",
+        "best": "https://docs.google.com/spreadsheets/d/e/2PACX-1vT4n7ctgiUJws_wA06LJvd0unWdULuw8nIfs7CvRlMqDzhzsJKqgnlUHns_mN_u3l7JTeOmJ3N-GxpB/pub?gid=241912853&single=true&output=csv",
     },
-    "Mundial de Clubes": {
-        "stats": "data/cwc.csv",
-        "best": "data/cwc_mejores.csv",
-    },
+    # "Mundial de Clubes": {
+    #     "stats": "PON_AQUI_TU_URL",
+    #     "best": "PON_AQUI_TU_URL",
+    # },
 }
 # ═══════════════════════════════════════════════════════════════
-
-POSICIONES = ["GK", "DEF", "MID", "FWD"]
 
 
 def cargar_ligas():
@@ -70,6 +68,19 @@ if not disponibles:
         "actualiza LEAGUES en app.py con las URLs de Google Sheets."
     )
     st.stop()
+
+def _mostrar_mejores(df):
+    cols_pos = [c for c in df.columns if c not in ("Participante", "Liga")]
+    col_config = {"Participante": st.column_config.TextColumn("Participante")}
+    for p in cols_pos:
+        col_config[p] = st.column_config.TextColumn(p)
+    st.dataframe(
+        df[["Participante"] + cols_pos],
+        column_config=col_config,
+        use_container_width=True,
+        hide_index=True,
+    )
+
 
 # ── Sidebar ──────────────────────────────────────────────────
 
@@ -141,34 +152,12 @@ if vista == "Todas (Acumulado)":
         bdf = best_data.get(liga)
         if bdf is not None and not bdf.empty:
             with st.expander(liga):
-                cols = [c for c in POSICIONES if c in bdf.columns]
-                col_config_best = {
-                    "Participante": st.column_config.TextColumn("Participante"),
-                }
-                for pos in cols:
-                    col_config_best[pos] = st.column_config.TextColumn(pos)
-                st.dataframe(
-                    bdf[["Participante"] + cols],
-                    column_config=col_config_best,
-                    use_container_width=True,
-                    hide_index=True,
-                )
+                _mostrar_mejores(bdf)
 else:
     bdf = best_data.get(vista)
     if bdf is not None and not bdf.empty:
         st.subheader("Mejores Jugadores por Posición")
-        cols = [c for c in POSICIONES if c in bdf.columns]
-        col_config_best = {
-            "Participante": st.column_config.TextColumn("Participante"),
-        }
-        for pos in cols:
-            col_config_best[pos] = st.column_config.TextColumn(pos)
-        st.dataframe(
-            bdf[["Participante"] + cols],
-            column_config=col_config_best,
-            use_container_width=True,
-            hide_index=True,
-        )
+        _mostrar_mejores(bdf)
 
 # ── Gráficos extras ──────────────────────────────────────────
 
